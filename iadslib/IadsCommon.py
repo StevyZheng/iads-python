@@ -1,9 +1,10 @@
-# coding = utf-8
+# coding=utf-8
 
 import logging
 import os
 import re
 from os.path import join as pjoin
+
 
 XT_DEFAULT_BASEFS = "xfs"
 

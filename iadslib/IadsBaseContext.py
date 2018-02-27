@@ -1,10 +1,8 @@
-# coding = utf-8
+# coding=utf-8
 
 import sys
-import os
 import json
 import signal
-import logging
 import traceback
 
 from .IadsCommon import *
@@ -39,7 +37,7 @@ class IadsBaseContext(object):
 
         if logfile:
             logdir = os.path.dirname(logfile)
-            if not os._exists(logdir):
+            if not os.path.exists(logdir):
                 os.makedirs(logdir)
             if not os.path.exists(logfile):
                 with open(logfile, 'w') as fp:
@@ -48,6 +46,9 @@ class IadsBaseContext(object):
         else:
             self.logger = None
         signal.signal(signal.SIGHUP, self.__log_rotate_handler)
+
+    def __del__(self):
+        self.__clear_logger()
 
     def __init_logger(self, name, logfile, loglevel, logconsole):
         logger = logging.Logger(name)
@@ -92,11 +93,47 @@ class IadsBaseContext(object):
                 handler.close()
             del self.logger
 
-    def __log_rotate_handler (self, sig=None, frm=None):
-        "Handles log rotate"
+    def __log_rotate_handler(self, sig=None, frm=None):
+        """Handles log rotate"""
         self.__clear_logger()
         self.logger = self.__init_logger(self.name,
                                         self.logfile,
                                         self.loglevel,
                                         self.logconsole)
         self.logger.info("Received SIGHUP, rotating log")
+
+    def debug(self, s):
+        self.logger.debug(s)
+
+    def info(self, s):
+        self.logger.info(s)
+
+    def warn(self, s):
+        self.logger.warn(s)
+
+    def log(self, s):
+        self.info(s)
+
+    def err(self, err=""):
+        self.logger.error(err)
+        raise IadsBaseException(err)
+
+    def json_parse(self, data, keep=False):
+        """Set 'keep' if we want to keep the result even parse fail"""
+        try:
+            result = json.loads(data)
+        except:
+            if keep:
+                result = data
+            else:
+                result = None
+        return result
+
+    def json_convert(self, data):
+        return json.dumps(data, indent=4)
+
+    def log_exception(self):
+        ex_type, ex, tb = sys.exc_info()
+        info = traceback.format_exception(ex_type, ex, tb)
+        lines = "Trap exception:\n" + ''.join(info).strip()
+        self.log(lines)

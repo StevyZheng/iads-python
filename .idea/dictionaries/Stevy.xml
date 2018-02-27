@@ -1,3 +1,9 @@
 <component name="ProjectDictionaryState">
-  <dictionary name="Stevy" />
+  <dictionary name="Stevy">
+    <words>
+      <w>myinput</w>
+      <w>paramiko</w>
+      <w>stdin</w>
+    </words>
+  </dictionary>
 </component>
