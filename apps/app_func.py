@@ -114,7 +114,6 @@ def gpu_monitor():
 		time.sleep(4)
 
 
-@try_catch
 def write_a(file_t, str_t):
 	with open(file_t, "a") as fp:
 		fp.write(str_t)

@@ -55,3 +55,6 @@ class SSHRemoteCmd:
         cmd_t = SSHRemoteCmd(hostname, username, password)
         out_t, err_t = cmd_t.run(command)
         return "".join(out_t.readlines())
+
+# if __name__ == "__main__":
+#    print(SSHRemoteCmd.exe_shell("192.168.0.65", "cat /proc/cpuinfo"))

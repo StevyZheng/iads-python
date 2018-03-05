@@ -1,25 +1,6 @@
 # coding = utf-8
-from colorama import Fore
 from prettytable import *
 
-
-class Colored(object):
-	def yellow(self, s):
-		return Fore.LIGHTYELLOW_EX + s + Fore.RESET
-
-	def white(self, s):
-		return Fore.LIGHTWHITE_EX + s + Fore.RESET
-
-	def red(self, s):
-		return Fore.LIGHTRED_EX + s + Fore.RESET
-
-	def green(self, s):
-		return Fore.LIGHTGREEN_EX + s + Fore.RESET
-
-	def blue(self, s):
-		return Fore.LIGHTBLUE_EX + s + Fore.RESET
-
-color = Colored()
 
 log_path = "/root/server_info"
 server_ip = "192.168.0.150"
@@ -29,11 +10,11 @@ t_row = PrettyTable()
 t_row.hrules = ALL
 t_row.vrules = ALL
 t_row.field_names =[
-	color.red("Command"),
-	color.red("Help text")
+	"Command",
+	"Help text"
 ]
-t_row.align[color.red("Command")] = "l"
-t_row.align[color.red("Help text")] = "l"
+t_row.align["Command"] = "l"
+t_row.align["Help text"] = "l"
 iads_help_list = (
 	["iads show help", "Show this help menu."],
 	["iads show bios-info", "Show BIOS all info."],
