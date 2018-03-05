@@ -9,5 +9,5 @@ class Show(object):
 	def model(self):
 		pass
 
-	def num(self):
+	def count(self):
 		pass

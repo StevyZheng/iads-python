@@ -16,14 +16,14 @@ t_row.field_names =[
 t_row.align["Command"] = "l"
 t_row.align["Help text"] = "l"
 iads_help_list = (
-	["iads show help", "Show this help menu."],
-	["iads show bios-info", "Show BIOS all info."],
-	["iads show bios-ver", "Show BIOS date version."],
-	["iads show bios-date", "Show BIOS date date."],
-	["iads show mem-model", "Show memory model."],
-	["iads show cpu-info", "Show CPU info."],
-	["iads show err-phy", "Show phys which have error."],
-	["iads show err-disk", "Show disks which have errors."],
+	["iads help", "Show this help menu."],
+	["iads bios show info", "Show BIOS all info."],
+	["iads bios show ver", "Show BIOS date version."],
+	["iads bios show date", "Show BIOS date date."],
+	["iads mem show model", "Show memory model."],
+	["iads cpu show info", "Show CPU info."],
+	["iads phy show err", "Show phys which have error."],
+	["iads disk show smarterr", "Show disks which have errors."],
 	["iads monitor gpu", "Monitor the temperature of GPUs and adjust the speed of the fan."],
 	["iads monitor log", "Monitor the logs and save lsiutils."],
 	["iads logging all", "Logging all the logs."],

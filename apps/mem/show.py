@@ -9,5 +9,5 @@ class Show(object):
 	def model(self):
 		show_mem_model()
 
-	def num(self):
+	def count(self):
 		pass

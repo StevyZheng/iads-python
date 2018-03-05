@@ -24,8 +24,7 @@ def list_dict(dict_a):
 
 
 def show_help():
-	print(help_str)
-	print(t_row)
+	return "%s%s%s" % (help_str, os.linesep, t_row)
 
 
 def show_bios_info():

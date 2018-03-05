@@ -3,6 +3,9 @@ from apps.app_func import *
 
 
 class Show(object):
+	def info(self):
+		pass
+
 	def smart(self, diskname):
 		pass
 
@@ -11,3 +14,6 @@ class Show(object):
 
 	def smarterr(self):
 		show_err_disk()
+
+	def count(self):
+		pass
