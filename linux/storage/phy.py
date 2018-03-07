@@ -4,7 +4,7 @@ import linux
 import json
 
 
-class Phy:
+class Phy(object):
 	def __init__(self, t_phy_name):
 		self.phy_name = t_phy_name
 		self.invalid_dword_count = ""

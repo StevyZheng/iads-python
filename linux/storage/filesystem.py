@@ -3,7 +3,7 @@ import linux
 from linux.storage.controller import Controller
 
 
-class Zfs:
+class Zfs(object):
 	def __init__(self):
 		self.disks = []
 

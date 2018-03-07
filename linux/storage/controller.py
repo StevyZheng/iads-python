@@ -5,7 +5,7 @@ import linux
 from . import disk
 
 
-class Controller:
+class Controller(object):
 	def __init__(self):
 		self.model = ""
 		self.index = -1

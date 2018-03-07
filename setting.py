@@ -9,7 +9,7 @@ check_list = ["lsscsi", "sas2ircu", "sas3ircu", "storcli", "smartctl", "zpool", 
 t_row = PrettyTable()
 t_row.hrules = ALL
 t_row.vrules = ALL
-t_row.field_names =[
+t_row.field_names = [
 	"Command",
 	"Help text"
 ]

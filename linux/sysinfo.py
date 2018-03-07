@@ -11,7 +11,7 @@ fan_mode = {
 gpu_critical_temp = 75
 
 
-class Bmc:
+class Bmc(object):
 	ip_addr = ""
 	mac = ""
 	fan_mode = 2
@@ -56,7 +56,7 @@ class Bmc:
 			max = 0
 			
 
-class SysInfo:
+class SysInfo(object):
 	def __init__(self):
 		self.dmesg_err = {}
 		self.messages_err = {}
@@ -159,7 +159,7 @@ class SysInfo:
 		return dict_err
 
 
-class Log:
+class Log(object):
 	def __init__(self):
 		pass
 

@@ -5,7 +5,7 @@ import json
 from linux import try_catch
 
 
-class Disk:
+class Disk(object):
 	def __init__(self):
 		self.model = ""
 		self.vendor = ""

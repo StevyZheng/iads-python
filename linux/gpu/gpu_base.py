@@ -2,7 +2,7 @@
 import linux
 
 
-class Gpu:
+class Gpu(object):
 	def __init__(
 			self,
 			attr_list
