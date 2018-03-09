@@ -1,5 +1,5 @@
 # coding=utf-8
-from apps.app_func import *
+from func import *
 
 
 class Show(object):

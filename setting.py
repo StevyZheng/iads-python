@@ -1,20 +1,19 @@
 # coding = utf-8
-from prettytable import *
+from tabulate import tabulate
+import os
 
 
 log_path = "/root/server_info"
 server_ip = "192.168.0.150"
 server_logpath = "~/iads_log"
 check_list = ["lsscsi", "sas2ircu", "sas3ircu", "storcli", "smartctl", "zpool", "zfs", "lsblk"]
-t_row = PrettyTable()
-t_row.hrules = ALL
-t_row.vrules = ALL
-t_row.field_names = [
+
+_header = [
 	"Command",
 	"Help text"
 ]
-t_row.align["Command"] = "l"
-t_row.align["Help text"] = "l"
+_data = []
+
 iads_help_list = (
 	["iads help", "Show this help menu."],
 	["iads bios show info", "Show BIOS all info."],
@@ -37,10 +36,14 @@ iads_help_list = (
 	["-iads zfs create-pool", "Create zpool named rpool"],
 )
 for line in iads_help_list:
-	t_row.add_row(line)
+	_data.append(line)
 
 help_str = ("iads 1.0.0\n"
 			"iads require dmidecode, smartctl, lsscsi, lsblk, sas3ircu, sas2ircu, ipmicfg, pkill.\n"
 			"Please makesure these tools are installed.\n\n"
 			"help menu list:")
+
+
+def str_help_list():
+	return "%s%s%s" % (help_str, os.linesep, tabulate(_data, _header, tablefmt="fancy_grid", stralign="left", numalign="left"))
 
