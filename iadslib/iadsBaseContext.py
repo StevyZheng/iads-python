@@ -5,7 +5,7 @@ import json
 import signal
 import traceback
 
-from .IadsCommon import *
+from .iadsCommon import *
 
 
 class IadsBaseException (Exception):

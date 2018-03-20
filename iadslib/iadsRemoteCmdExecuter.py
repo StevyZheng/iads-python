@@ -1,12 +1,15 @@
 # coding=utf-8
 
 import paramiko
+from .iadsCommon import *
+
+REMOTECMD_LOGFILE = pjoin(IADS_LOG_DIR, "remote_cmd.log")
 
 
-class SSHRemoteCmd:
-    def __init__(self, hostname=None, username=None, password=None, timeout=None):
-        # paramiko.util.log_to_file('ssh_remote_cmd.log')
-
+class SSHRemoteCmd(object):
+    def __init__(self, hostname=None, username=None, password=None, timeout=None, enabled_logging=False):
+        if enabled_logging:
+            paramiko.util.log_to_file(REMOTECMD_LOGFILE)
         self.hostname = hostname
         self.username = username
         self.password = password

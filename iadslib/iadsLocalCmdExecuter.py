@@ -7,12 +7,12 @@ import subprocess
 import threading
 import time
 
-from .IadsBaseContext import *
+from .iadsBaseContext import *
 
-CMDEXECUTOR_LOGFILE = "%s/cmd_executor.log" % IADS_LOG_DIR
+CMDEXECUTOR_LOGFILE = pjoin(IADS_LOG_DIR, "cmd_executor.log")
 
 
-class IadsCmdExecuter(IadsBaseContext):
+class IadsLocalCmdExecuter(IadsBaseContext):
 	"""This is helper class to run shell command"""
 
 	def __init__(self, enable_logging=False):
@@ -25,7 +25,7 @@ class IadsCmdExecuter(IadsBaseContext):
 			IadsBaseContext.__init__(self, name="cmd_executor", **self.logConfig)
 		else:
 			IadsBaseContext.__init__(self, logfile="")
-		self.cmd_logging = enable_logging
+		self.enable_cmd_logging = enable_logging
 		self.exec_context = {}
 		self.cmd_count = 0
 
@@ -44,11 +44,12 @@ class IadsCmdExecuter(IadsBaseContext):
 		self.cmd_count = 0
 		return 0
 
-	def run_cmd_parallel(self, timeout):
-		# The thread function to execute the command
+	def run_cmd_parallel(self, timeout=30):
+		""" The thread function to execute the command """
+
 		def cmd_thread_func(ind, arg2, arg3):
 			pipe = subprocess.PIPE
-			if self.cmd_logging:
+			if self.enable_cmd_logging:
 				self.logger.info("child thread %d start execute cmd %s " % (ind, self.exec_context[ind]["cmd"]))
 			self.exec_context[ind]["process"] = subprocess.Popen(self.exec_context[ind]["cmd"], shell=True, stdin=pipe,
 			                                                     stdout=pipe, stderr=pipe)
@@ -60,7 +61,7 @@ class IadsCmdExecuter(IadsBaseContext):
 				self.exec_context[ind]["returncode"] = 1
 			else:
 				self.exec_context[ind]["returncode"] = 0
-			if self.cmd_logging:
+			if self.enable_cmd_logging:
 				self.logger.info("child thread %d complete execute cmd %s ret %d out %s err %s " % (
 					ind, self.exec_context[ind]["cmd"], self.exec_context[ind]["returncode"], out, err))
 
@@ -89,7 +90,7 @@ class IadsCmdExecuter(IadsBaseContext):
 			cmd_result[i]["returncode"] = self.exec_context[i]["returncode"]
 		return cmd_result
 
-	def run_cmd(self, cmd, timeout=30, user_input=None):
+	def run_cmd_single(self, cmd, timeout=30, user_input=None):
 		result = {}
 		if timeout == 0:
 			block_forever = True
@@ -98,7 +99,7 @@ class IadsCmdExecuter(IadsBaseContext):
 		CHECK_INTERVAL = 0.02
 
 		pipe = subprocess.PIPE
-		if self.cmd_logging:
+		if self.enable_cmd_logging:
 			self.logger.info("create subprocess to execute cmd: " + cmd)
 			if user_input is not None:
 				proc = subprocess.Popen(cmd, shell=True, stdin=pipe, stdout=pipe, stderr=pipe)
@@ -115,7 +116,7 @@ class IadsCmdExecuter(IadsBaseContext):
 					result["stdout"] = proc.stdout.read()
 					result["strerr"] = proc.stderr.read()
 
-					if self.cmd_logging:
+					if self.enable_cmd_logging:
 						self.logger.info("the cmd %s executed done, ret: %d, out: %s, err: %s" % (
 							cmd, result["returncode"], result["stdout"], result["stderr"]))
 						complete = True
@@ -129,7 +130,7 @@ class IadsCmdExecuter(IadsBaseContext):
 				result["timeout"] = 1
 			return result
 
-	def run_cmd_parallel_2(self, timeout=30, user_input=None):
+	def run_cmd_serial(self, timeout=30, user_input=None):
 		"""This is the single-thread version of run_cmd_parallel()."""
 
 		def __convert_result(cur_result):
@@ -154,7 +155,7 @@ class IadsCmdExecuter(IadsBaseContext):
 		# start all the procs
 		pipe = subprocess.PIPE
 		for cmd in cmd_list:
-			if self.cmd_logging:
+			if self.enable_cmd_logging:
 				self.logger.info("create subprocess to execute cmd: " + cmd["cmd"])
 			if user_input is not None:
 				proc = subprocess.Popen(cmd["cmd"], shell=True, stdin=pipe,
@@ -190,7 +191,7 @@ class IadsCmdExecuter(IadsBaseContext):
 					cmd["stderr"] = proc.stderr.read()
 					transfer_list.append(cmd)
 
-					if self.cmd_logging:
+					if self.enable_cmd_logging:
 						self.logger.info("the cmd %s executed done, ret: %d, out: %s, err: %s" % \
 						                 (cmd["cmd"], cmd["returncode"], cmd["stdout"], cmd["stderr"]))
 			for cmd in transfer_list:
@@ -211,7 +212,7 @@ class IadsCmdExecuter(IadsBaseContext):
 		return __convert_result(result_list)
 
 	def is_command_timeout(self, cmd_result, cmd_index):
-		if cmd_result.has_key(cmd_index):
+		if cmd_index in cmd_result:
 			return int(cmd_result[cmd_index]["timeout"])
 		return 1
 
@@ -226,18 +227,18 @@ class IadsCmdExecuter(IadsBaseContext):
 		cmd_ret = 1
 		cmd_stdout = None
 		cmd_stderr = None
-		if cmd_result.has_key(cmd_index):
-			if cmd_result[cmd_index].has_key("returncode"):
+		if cmd_index in cmd_result:
+			if "returncode" in cmd_result[cmd_index]:
 				cmd_ret = int(cmd_result[cmd_index]["returncode"])
-			if cmd_result[cmd_index].has_key("stdout"):
+			if "stdout" in cmd_result[cmd_index]:
 				cmd_stdout = cmd_result[cmd_index]["stdout"]
-			if cmd_result[cmd_index].has_key("stderr"):
+			if "stderr" in cmd_result[cmd_index]:
 				cmd_stderr = cmd_result[cmd_index]["stderr"]
-		return (cmd_ret, cmd_stdout, cmd_stderr)
+		return cmd_ret, cmd_stdout, cmd_stderr
 
 	def run_one_shell_cmd(self, cmd, timeout=30, user_input=None):
 		"""This is to run a cmd in parallel and wait for them to complete"""
-		result = self.run_cmd(cmd, timeout, user_input)
+		result = self.run_cmd_single(cmd, timeout, user_input)
 		if result.has_key('timeout') and result['timeout'] == 1:
 			ret = 124
 			out = err = None
