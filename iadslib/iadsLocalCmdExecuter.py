@@ -90,7 +90,7 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 			cmd_result[i]["returncode"] = self.exec_context[i]["returncode"]
 		return cmd_result
 
-	def run_cmd_single(self, cmd, timeout=30, user_input=None):
+	def run_cmd_single(self, cmd, timeout=-1, user_input=None):
 		result = {}
 		if timeout == 0:
 			block_forever = True
@@ -101,34 +101,34 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 		pipe = subprocess.PIPE
 		if self.enable_cmd_logging:
 			self.logger.info("create subprocess to execute cmd: " + cmd)
-			if user_input is not None:
-				proc = subprocess.Popen(cmd, shell=True, stdin=pipe, stdout=pipe, stderr=pipe)
-				proc.stdin.write(user_input)
-			else:
-				proc = subprocess.Popen(cmd, shell=True, stdout=pipe, stderr=pipe)
-			complete = False
-			while block_forever or timeout > 0:
-				if complete:
+		if user_input is not None:
+			proc = subprocess.Popen(cmd, shell=True, stdin=pipe, stdout=pipe, stderr=pipe)
+			proc.stdin.write(user_input)
+		else:
+			proc = subprocess.Popen(cmd, shell=True, stdout=pipe, stderr=pipe)
+		complete = False
+		while block_forever or timeout > 0:
+			if complete:
+				break
+			ret = proc.poll()
+			if ret is not None:
+				result["returncode"] = proc.returncode
+				result["stdout"] = proc.stdout.read()
+				result["strerr"] = proc.stderr.read()
+
+				if self.enable_cmd_logging:
+					self.logger.info("the cmd %s executed done, ret: %d, out: %s, err: %s" % (
+						cmd, result["returncode"], result["stdout"], result["stderr"]))
+					complete = True
 					break
-				ret = proc.poll()
-				if ret is not None:
-					result["returncode"] = proc.returncode
-					result["stdout"] = proc.stdout.read()
-					result["strerr"] = proc.stderr.read()
 
-					if self.enable_cmd_logging:
-						self.logger.info("the cmd %s executed done, ret: %d, out: %s, err: %s" % (
-							cmd, result["returncode"], result["stdout"], result["stderr"]))
-						complete = True
-						break
-
-					time.sleep(CHECK_INTERVAL)
-					if not block_forever:
-						timeout -= CHECK_INTERVAL
-			if not complete:
-				proc.terminate()
-				result["timeout"] = 1
-			return result
+				time.sleep(CHECK_INTERVAL)
+				if not block_forever:
+					timeout -= CHECK_INTERVAL
+		if not complete:
+			proc.terminate()
+			result["timeout"] = 1
+		return result
 
 	def run_cmd_serial(self, timeout=30, user_input=None):
 		"""This is the single-thread version of run_cmd_parallel()."""
@@ -239,7 +239,7 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 	def run_one_shell_cmd(self, cmd, timeout=30, user_input=None):
 		"""This is to run a cmd in parallel and wait for them to complete"""
 		result = self.run_cmd_single(cmd, timeout, user_input)
-		if result.has_key('timeout') and result['timeout'] == 1:
+		if 'timeout' in result and result['timeout'] == 1:
 			ret = 124
 			out = err = None
 		else:
