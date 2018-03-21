@@ -90,7 +90,7 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 			cmd_result[i]["returncode"] = self.exec_context[i]["returncode"]
 		return cmd_result
 
-	def run_cmd_single(self, cmd, timeout=-1, user_input=None):
+	def run_cmd_single(self, cmd, timeout=30, user_input=None):
 		result = {}
 		if timeout == 0:
 			block_forever = True
@@ -114,17 +114,17 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 			if ret is not None:
 				result["returncode"] = proc.returncode
 				result["stdout"] = proc.stdout.read()
-				result["strerr"] = proc.stderr.read()
+				result["stderr"] = proc.stderr.read()
 
 				if self.enable_cmd_logging:
 					self.logger.info("the cmd %s executed done, ret: %d, out: %s, err: %s" % (
 						cmd, result["returncode"], result["stdout"], result["stderr"]))
-					complete = True
-					break
+				complete = True
+				break
 
-				time.sleep(CHECK_INTERVAL)
-				if not block_forever:
-					timeout -= CHECK_INTERVAL
+			time.sleep(CHECK_INTERVAL)
+			if not block_forever:
+				timeout -= CHECK_INTERVAL
 		if not complete:
 			proc.terminate()
 			result["timeout"] = 1

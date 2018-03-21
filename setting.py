@@ -30,10 +30,6 @@ iads_help_list = (
 	["iads logging upload", "Upload the log to server, only used in product line."],
 	["iads run linpack <minutes> \niads run paoyali <minutes>",
 		"Run python linpack cpu and memory stress program,\nno param <minutes> means that always running. o_o"],
-	["iads run reboot <sec>", "Run the reboot interval <sec>."],
-	["iads run reboot clean", "Clean all the reboot log."],
-	["iads run reboot rm", "Remove all reboot files."],
-	["-iads zfs create-pool", "Create zpool named rpool"],
 )
 for line in iads_help_list:
 	_data.append(line)
