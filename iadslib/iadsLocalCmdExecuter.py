@@ -252,3 +252,10 @@ class IadsLocalCmdExecuter(IadsBaseContext):
 		if not err:
 			err = ""
 		return ret, out, err
+
+	def run_one_shell_cmd_return_str(self, cmd, timeout=30, user_input=None):
+		ret_t, out_t, err_t = self.run_one_shell_cmd(cmd, timeout, user_input)
+		if 0 == ret_t:
+			return out_t
+		else:
+			return None

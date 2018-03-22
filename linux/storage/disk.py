@@ -11,13 +11,24 @@ class Disk(object):
 		self.vendor = ""
 		self.fw = ""
 		self.sn = ""
+		self.wwn = ""
+		self.hctl = ""
 		self.dev_name = ""
 		self.smart = ""
 		self.type = ""
 		self.smart_attr = {}
 
 	@staticmethod
-	@try_catch
+	def map_disk_wwn_hctl(diskname):
+		lsscsi = linux.exe_shell("lsscsi -w |grep /dev/|awk '{print$1,$3,$4}'")
+		for i in lsscsi:
+			split_t = i.split(" ")
+			if diskname in split_t:
+				return split_t
+			else:
+				return None
+
+	@staticmethod
 	def get_from_sas_disk_smart_i_str(disk_name):
 		return linux.exe_shell("smartctl -i /dev/%s" % disk_name)
 
@@ -26,7 +37,7 @@ class Disk(object):
 		smart = Disk.get_from_sas_disk_smart_i_str(disk_name)
 		model = linux.search_regex_one_line_string_column(smart, "(?:Device Model|Product):.+", ":", 1).strip()
 		sn = linux.search_regex_one_line_string_column(smart, "Serial (?:N|n)umber.+", ":", 1).strip()
-		vendor = linux.search_regex_one_line_string_column(smart, "(?:ATA|Vendor).+", ":", 1).strip()
+		vendor = linux.search_regex_one_line_string_column(smart, "(?:SATA Ver|Vendor).+", ":", 1).strip()
 		return {
 			"name": disk_name,
 			"model": model,
@@ -91,7 +102,6 @@ class DiskFromLsiSas3(Disk):
 		self.sn = sn
 		self.dev_name = name
 
-	@try_catch
 	def fill_attrs(self):
 		smart_str = linux.exe_shell("smartctl -a /dev/%s" % self.dev_name)
 		smartx_str = linux.exe_shell("smartctl -x /dev/%s" % self.dev_name)
@@ -100,6 +110,8 @@ class DiskFromLsiSas3(Disk):
 		self.fw = linux.search_regex_one_line_string_column(smart_str, "(?:Firmware|Revision).+", ":", 1).strip()
 		self.vendor = linux.search_regex_one_line_string_column(smart_str, "(?:ATA|Vendor).+", ":", 1).strip()
 		self.sn = linux.search_regex_one_line_string_column(smart_str, "Serial (?:N|n)umber.+", ":", 1).strip()
+		self.wwn = linux.search_regex_one_line_string_column(smart_str, ".+(?:Unit|WWN).+", ":", 1).strip()
+		self.hctl = ""
 		if "SAS" in smart_str:
 			self.type = "SAS"
 			smart_str_arr = linux.search_regex_strings(smart_str, " *(?:write:|read:|verify:).+")

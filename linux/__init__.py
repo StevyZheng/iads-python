@@ -8,6 +8,7 @@ import shutil
 import stat
 import json
 from setting import *
+from iadslib.iadsLocalCmdExecuter import IadsLocalCmdExecuter
 
 
 def try_catch(f):
@@ -59,21 +60,11 @@ def is_string_list(s):
 		return False
 
 
-@try_catch
 def exe_shell(cmd):
-	pro = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
-	pro = pro.communicate()
-	if (pro[1] is None) and (pro[0] is not None):
-		return pro[0]
-	elif (pro[1] is not None) and (pro[0] is None):
-		return pro[1]
-	elif (pro[1] is not None) and (pro[0] is not None):
-		return "%s\n%s" % (pro[0], pro[1])
-	else:
-		return None
+	exec_shell = IadsLocalCmdExecuter()
+	return exec_shell.run_one_shell_cmd_return_str(cmd)
 
 
-@try_catch
 def search_regex_strings(src_str, reg):
 	if is_string_list([src_str, reg]):
 		result = re.findall(reg, src_str)
@@ -83,7 +74,6 @@ def search_regex_strings(src_str, reg):
 		return None
 
 
-@try_catch
 def search_regex_strings_column(src_str, reg, split_str, column):
 	if is_string_list([src_str, reg, split_str]):
 		result = re.findall(reg, src_str, re.M)
@@ -97,7 +87,6 @@ def search_regex_strings_column(src_str, reg, split_str, column):
 		return None
 
 
-@try_catch
 def search_regex_one_line_string_column(src_str, reg, split_str, column):
 	if is_string_list([src_str, reg, split_str]):
 		result = re.findall(reg, src_str, re.M)
@@ -111,7 +100,6 @@ def search_regex_one_line_string_column(src_str, reg, split_str, column):
 		return None
 
 
-@try_catch
 def get_match_sub_string(src_str, reg_str):
 	if is_string_list([src_str, reg_str]):
 		return re.search(reg_str, src_str).group(0)
@@ -142,12 +130,10 @@ def write_file(file_path, buf):
 		return "-9999"
 
 
-@try_catch
 def list_dir_all_files(path):
 	return os.listdir(path)
 
 
-@try_catch
 def list_dir_normal_files(path):
 	files = os.listdir(path)
 	result = []
@@ -183,7 +169,6 @@ def check_unexists_tools():
 	return unexists_list
 
 
-@try_catch
 def copy_tools():
 	exes = ["sas2ircu", "sas3ircu", "storcli", ]
 	main_path = get_main_path()
@@ -192,7 +177,6 @@ def copy_tools():
 		os.chmod("/bin/%s" % i, stat.S_IRWXU | stat.S_IRGRP | stat.S_IROTH)
 
 
-@try_catch
 def rm_tools():
 	exes = ["sas2ircu", "sas3ircu", "storcli", ]
 	for i in exes:
@@ -200,3 +184,10 @@ def rm_tools():
 		if os.path.exists(file_path):
 			os.remove(file_path)
 
+
+def get_os_dev():
+	df = exe_shell("df|grep /boot|awk '{print$1}'|sed 's/[0-9]*//g'")
+	if df is not None:
+		return df.strip()
+	else:
+		return None

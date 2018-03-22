@@ -19,21 +19,21 @@ class Controller(object):
 		sas3_con = linux.exe_shell("sas3ircu list|grep -P 'SAS[0-9]{4}'")
 		mega_raid_con = linux.exe_shell("storcli show|grep LSI")
 		cons = []
-		if "" != sas2_con.strip():
+		if sas2_con is not None:
 			indexs = linux.search_regex_strings_column(sas2_con, "[0-9]+ *SAS[0-9]{4}.*", " ", 0)
 			con_str = linux.search_regex_strings(sas2_con, "SAS[0-9]{4}")
 			for i in range(len(indexs)):
 				c = LsiSas2Controller(int(indexs[i]), con_str[i])
 				c.fill_attrs()
 				cons.append(c)
-		if "" != sas3_con.strip():
+		if sas3_con is not None:
 			indexs = linux.search_regex_strings_column(sas3_con, "[0-9]+ *SAS[0-9]{4}.*", " ", 0)
 			con_str = linux.search_regex_strings(sas3_con, "SAS[0-9]{4}")
 			for i in range(len(indexs)):
 				c = LsiSas3Controller(int(indexs[i]), con_str[i])
 				c.fill_attrs()
 				cons.append(c)
-		if "" != mega_raid_con.strip():
+		if mega_raid_con is not None:
 			indexs = linux.search_regex_strings_column(sas2_con, ".*SAS[0-9]{4}.*", " ", 0)
 			con_str = linux.search_regex_strings(sas2_con, "SAS[0-9]{4}")
 			for i in range(len(indexs)):
@@ -81,7 +81,7 @@ class Controller(object):
 class LsiSas2Controller(Controller):
 	def __init__(self, t_index, t_model):
 		Controller.__init__(self)
-		if re.match('SAS[0-9]{4}', t_model):
+		if re.match("SAS[0-9]{4}", t_model):
 			self.model = t_model
 		else:
 			raise Exception("LsiSas2Controller model string is not available.")
@@ -91,7 +91,7 @@ class LsiSas2Controller(Controller):
 	@try_catch
 	def fill_attrs(self):
 		sas2ircu_string = linux.exe_shell("sas2ircu %d display" % self.index)
-		fw_str = linux.get_match_sub_string(sas2ircu_string, 'Firmware.*(?:[0-9]+\\.)+[0-9]*')
+		fw_str = linux.get_match_sub_string(sas2ircu_string, "Firmware.*(?:[0-9]+\\.)+[0-9]*")
 		sn_list = linux.search_regex_strings_column(sas2ircu_string, "^ +Serial No.+", ":", 1)
 		disk_name_sns = Controller.scan_disk_name_sn()
 		tmp = fw_str.split(":")
@@ -110,7 +110,7 @@ class LsiSas2Controller(Controller):
 class LsiSas3Controller(Controller):
 	def __init__(self, t_index, t_model):
 		Controller.__init__(self)
-		if re.match('SAS[0-9]{4}', t_model):
+		if re.match("SAS[0-9]{4}", t_model):
 			self.model = t_model
 		else:
 			raise Exception("LsiSas2Controller model string is not available.")
