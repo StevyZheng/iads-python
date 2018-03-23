@@ -43,8 +43,7 @@ class Disk(object):
 					"wwn": split_t[1],
 					"dev_name": split_t[2]
 				}
-			else:
-				return None
+		return None
 
 	@staticmethod
 	def get_from_sas_disk_smart_i_str(disk_name):
@@ -55,7 +54,7 @@ class Disk(object):
 		smart = Disk.get_from_sas_disk_smart_i_str(disk_name)
 		model = linux.search_regex_one_line_string_column(smart, "(?:Device Model|Product):.+", ":", 1).strip()
 		sn = linux.search_regex_one_line_string_column(smart, "Serial (?:N|n)umber.+", ":", 1).strip()
-		vendor = linux.search_regex_one_line_string_column(smart, "(?:SATA Ver|Vendor).+", ":", 1).strip()
+		vendor = linux.search_regex_one_line_string_column(smart, "(?:SATA Ver|Vendor).+", ":", 1).split()[0].strip()
 		return {
 			"name": disk_name,
 			"model": model,
@@ -70,7 +69,7 @@ class Disk(object):
 		disks_lines = linux.exe_shell("lsblk -o NAME,VENDOR|grep -P '^sd.*[A-Z]'")
 		for line in disks_lines.splitlines():
 			disk_t = line.split()
-			if len(disk_t) < 1 and "LSI" not in disk_t[1]:
+			if len(disk_t) > 1 and "LSI" not in disk_t[1]:
 				disks.append(disk_t[0])
 		ds = []
 		for i in disks:
@@ -78,6 +77,23 @@ class Disk(object):
 			d_t.fill_attrs()
 			ds.append(d_t)
 		return ds
+
+	@staticmethod
+	def get_dev_attr_dict(dev_name):
+		i = DiskFromLsiSas3("", dev_name)
+		i.fill_attrs()
+		return {
+			"dev": i.dev_name,
+			"model": i.model,
+			"fw": i.fw,
+			"SN": i.sn,
+			"type": i.type,
+			"vendor": i.vendor,
+			"smart": i.smart_attr,
+			"hctl": i.hctl,
+			"wwn": i.wwn,
+			"age": i.age
+		}
 
 	@staticmethod
 	def __if_smart_err(disk_oj):
@@ -154,12 +170,16 @@ class DiskFromLsiSas3(Disk):
 		smart_str = linux.exe_shell("smartctl -a /dev/%s" % self.dev_name)
 		smartx_str = linux.exe_shell("smartctl -x /dev/%s" % self.dev_name)
 		self.smart = smartx_str
-		self.model = linux.search_regex_one_line_string_column(smart_str, "(?:Device Model|Product):.+", ":", 1).strip()
-		self.fw = linux.search_regex_one_line_string_column(smart_str, "(?:Firmware|Revision).+", ":", 1).strip()
-		self.vendor = linux.search_regex_one_line_string_column(smart_str, "(?:ATA|Vendor).+", ":", 1).strip()
-		self.sn = linux.search_regex_one_line_string_column(smart_str, "Serial (?:N|n)umber.+", ":", 1).strip()
-		self.wwn = self.map_disk_wwn_hctl(self.dev_name)["wwn"]
-		self.hctl = self.map_disk_wwn_hctl(self.dev_name)["hctl"]
+		try:
+			self.model = linux.search_regex_one_line_string_column(smart_str, "(?:Device Model|Product):.+", ":", 1).strip()
+			self.fw = linux.search_regex_one_line_string_column(smart_str, "(?:Firmware|Revision).+", ":", 1).strip()
+			self.vendor = linux.search_regex_one_line_string_column(smart_str, "(?:SATA Ver|Vendor).+", ":", 1).split()[0].strip()
+			self.sn = linux.search_regex_one_line_string_column(smart_str, "Serial (?:N|n)umber.+", ":", 1).strip()
+			map_temp = self.map_disk_wwn_hctl(self.dev_name)
+			self.wwn = map_temp["wwn"] if map_temp is not None else ""
+			self.hctl = map_temp["hctl"] if map_temp is not None else ""
+		except Exception:
+			print("disk %s is not exists." % self.dev_name)
 
 		# fill in smart_attr
 		# ==========================================================================
@@ -279,7 +299,6 @@ class DiskFromLsiSas3(Disk):
 					self.smart_attr["channel1Error"] = dict_tmp
 					dict_tmp = {}
 				i += 1
-
 			# fill in age
 			# 'data_gb' is float number
 			# age: {
@@ -293,7 +312,7 @@ class DiskFromLsiSas3(Disk):
 
 		if "SATA" in smart_str:
 			self.type = "SATA"
-			dict_tmp = linux.search_regex_strings(smart_str, "^( |[0-9])+.+[0-9]+ .+0x.+(In_the_past|-|FAILING_NOW) +[0-9]+")
+			dict_tmp = linux.search_regex_strings(smart_str, ".*[0-9]+.+0x.+(?:In_the_past|-|FAILING_NOW) +[0-9]+")
 			for line in dict_tmp:
 				tmp = line.split()
 				dict_tmp = {
@@ -310,8 +329,8 @@ class DiskFromLsiSas3(Disk):
 				self.smart_attr[tmp[1]] = dict_tmp
 
 			if "Start_Stop_Count" in self.smart_attr:
-				self.age["start_stop_count"] = self.smart_attr["Start_Stop_Count"]
-				self.age["power_on_hours"] = self.smart_attr["Power_On_Hours"]
+				self.age["start_stop_count"] = self.smart_attr["Start_Stop_Count"]["RAW_VALUE"]
+				self.age["power_on_hours"] = self.smart_attr["Power_On_Hours"]["RAW_VALUE"]
 
 	def to_json(self):
 		struct = {

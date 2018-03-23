@@ -166,9 +166,8 @@ def bin_exists(bin_name):
 				try:
 					os.chmod(bin_path, stat.S_IXUSR)
 				except Exception:
-					return False
-		else:
-			return False
+					continue
+	return False
 
 
 def check_unexists_tools():

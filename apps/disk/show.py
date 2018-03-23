@@ -3,8 +3,8 @@ from func import *
 
 
 class Show(object):
-	def info(self):
-		pass
+	def info(self, disk_name):
+		show_disk_info(disk_name)
 
 	def overage(self):
 		show_overage_disk()
@@ -18,10 +18,7 @@ class Show(object):
 	def smartall(self):
 		pass
 
-	def phyerr(self):
-		pass
-
-	def smarterr(self):
+	def err(self):
 		show_err_smart_disk()
 
 	def count(self):

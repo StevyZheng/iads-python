@@ -8,8 +8,10 @@ SAS_LIMIT_GB = 1024
 SATA_LIMIT_HOURS = 10
 
 
-def show_disk_info():
-	pass
+def show_disk_info(dev_name):
+	disk_dict = Disk.get_dev_attr_dict(dev_name)
+	json_str = json.dumps(disk_dict, indent=1)
+	print(json_str)
 
 
 def show_err_smart_disk():
