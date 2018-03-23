@@ -7,6 +7,14 @@ from linux import try_catch
 SAS_LIMIT_COUNT = 10
 SAS_LIMIT_GB = 1024
 SATA_LIMIT_HOURS = 10
+SATA_SMART_ERROR_LIST = [
+	"Reallocated_Sector_Ct",
+	"Spin_Retry_Count",
+	"End-to-End_Error",
+	"High_Fly_Writes",
+	"Current_Pending_Sector",
+	"UDMA_CRC_Error_Count"
+]
 
 
 class Disk(object):
@@ -87,10 +95,15 @@ class Disk(object):
 			else:
 				return False
 		if "SATA" in disk_oj.smart:
-			pass
+			if "No Errors Logged" not in disk_oj.smart:
+				return False
+			for attr_ in SATA_SMART_ERROR_LIST:
+				if disk_oj.smart_attr[attr_]["RAW_VALUE"] > 0:
+					return False
+			return True
 
 	@staticmethod
-	def get_overage_disks(disk_list):
+	def get_over_agelimit_disks(disk_list):
 		""" return sas and sata disk list witch start_stop_hours/count or data is over the limit """
 		over_sas_disk = []
 		over_sata_disk = []

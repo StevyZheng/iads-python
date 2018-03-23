@@ -6,8 +6,8 @@ class Show(object):
 	def info(self):
 		pass
 
-	def used_hours(self):
-		pass
+	def overage(self):
+		show_overage_disk()
 
 	def power_count(self):
 		pass

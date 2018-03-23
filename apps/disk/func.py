@@ -20,7 +20,7 @@ def show_err_smart_disk():
 
 def show_overage_disk():
 	disks = Disk.get_all_disk()
-	over_sas_disk, over_sata_disk = Disk.get_overage_disks(disks)
+	over_sas_disk, over_sata_disk = Disk.get_over_agelimit_disks(disks)
 	sas_header = ["name", "startCount", "data"]
 	sata_header = ["name", "startCount", "hours"]
 	sas_data = []

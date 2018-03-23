@@ -3,19 +3,10 @@ import os
 import math
 import threading
 import time
+from linux import bin_exists
 from os.path import join as pjoin
 from numpy import matrix, linalg, random, amax, asscalar
 from linux import exe_shell, search_regex_one_line_string_column, search_regex_strings_column
-from iadslib.iadsLocalCmdExecuter import IadsLocalCmdExecuter
-
-
-def exists_elf(elf_name):
-	sys_path = os.environ["PATH"].split(":")
-	result = False
-	for i in sys_path:
-		if os.path.exists(pjoin(i, elf_name)):
-			result = True
-	return result
 
 
 def show_cpu_model():
@@ -23,7 +14,7 @@ def show_cpu_model():
 
 
 def show_cpu_info():
-	if not exists_elf("dmidecode"):
+	if not bin_exists("dmidecode"):
 		print("dmidecode is not exists, please install dmidecode.")
 		return
 	# dmi_info_t = IadsLocalCmdExecuter().run_one_shell_cmd("dmidecode --type processor")
