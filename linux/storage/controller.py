@@ -80,7 +80,7 @@ class Controller(object):
 
 class LsiSas2Controller(Controller):
 	def __init__(self, t_index, t_model):
-		Controller.__init__(self)
+		super(LsiSas2Controller).__init__()
 		if re.match("SAS[0-9]{4}", t_model):
 			self.model = t_model
 		else:
@@ -109,7 +109,7 @@ class LsiSas2Controller(Controller):
 
 class LsiSas3Controller(Controller):
 	def __init__(self, t_index, t_model):
-		Controller.__init__(self)
+		super(LsiSas3Controller).__init__()
 		if re.match("SAS[0-9]{4}", t_model):
 			self.model = t_model
 		else:

@@ -4,6 +4,10 @@ import re
 import json
 from linux import try_catch
 
+SAS_LIMIT_COUNT = 10
+SAS_LIMIT_GB = 1024
+SATA_LIMIT_HOURS = 10
+
 
 class Disk(object):
 	def __init__(self):
@@ -21,6 +25,7 @@ class Disk(object):
 
 	@staticmethod
 	def map_disk_wwn_hctl(diskname):
+		""" map wwn and H:C:T:L from dev_name """
 		lsscsi = linux.exe_shell("lsscsi -w |grep /dev/|awk '{print$1,$3,$4}'")
 		for i in lsscsi.splitlines():
 			split_t = i.split(" ")
@@ -52,6 +57,7 @@ class Disk(object):
 
 	@staticmethod
 	def get_all_disk():
+		""" return all disk object list from hba and chipset. """
 		disks = []
 		disks_lines = linux.exe_shell("lsblk -o NAME,VENDOR|grep -P '^sd.*[A-Z]'")
 		for line in disks_lines.splitlines():
@@ -67,6 +73,7 @@ class Disk(object):
 
 	@staticmethod
 	def __if_smart_err(disk_oj):
+		""" return True if smart info of disk_oj has error, else return False """
 		if "SAS" in disk_oj.smart:
 			if int(disk_oj.smart_attr["channel0Error"]["Invalid DWORD count"]) > 0 or \
 				int(disk_oj.smart_attr["channel0Error"]["Running disparity error count"]) > 0 or \
@@ -83,7 +90,28 @@ class Disk(object):
 			pass
 
 	@staticmethod
+	def get_overage_disks(disk_list):
+		""" return sas and sata disk list witch start_stop_hours/count or data is over the limit """
+		over_sas_disk = []
+		over_sata_disk = []
+		for disk in disk_list:
+			if disk.type == "SAS":
+				if int(disk.age["start_stop_count"]) > SAS_LIMIT_COUNT or float(disk.age["data_gb"]) > SAS_LIMIT_GB:
+					over_sas_disk.append(disk)
+			if disk.type == "SATA":
+				if int(disk.age["start_stop_count"]) > SAS_LIMIT_COUNT or int(
+						disk.age["power_on_hours"]) > SATA_LIMIT_HOURS:
+					over_sata_disk.append(disk)
+		return over_sas_disk, over_sata_disk
+
+	@staticmethod
+	def get_overage_disks_json(disk_list):
+		""" get_overage_disks function's json model """
+		pass
+
+	@staticmethod
 	def get_err_disk_dict():
+		""" return disk dict has error """
 		err_disk_dict = {}
 		disks = Disk.get_all_disk()
 		for i in disks:
@@ -105,7 +133,7 @@ class Disk(object):
 
 class DiskFromLsiSas3(Disk):
 	def __init__(self, sn, name):
-		Disk.__init__(self)
+		super(DiskFromLsiSas3, self).__init__()
 		self.sn = sn
 		self.dev_name = name
 
@@ -247,8 +275,8 @@ class DiskFromLsiSas3(Disk):
 			# }
 			if isinstance(self.smart, str) and ("start-stop" in self.smart):
 				self.age["start_stop_count"] = linux.search_regex_one_line_string_column(self.smart, ".+start-stop.+", ":", 1)
-				max_gb = max(self.smart_attr["read"]["byte10_9"], self.smart_attr["write"]["byte10_9"], self.smart_attr["verify"]["byte10_9"])
-				self.age["data_gb"] = str(max_gb)
+				all_gb = float(self.smart_attr["read"]["byte10_9"]) + float(self.smart_attr["write"]["byte10_9"]) + float(self.smart_attr["verify"]["byte10_9"])
+				self.age["data_gb"] = str(all_gb)
 
 		if "SATA" in smart_str:
 			self.type = "SATA"
@@ -290,4 +318,19 @@ class DiskFromLsiSas3(Disk):
 
 class DiskFromLsiSas2(DiskFromLsiSas3):
 	def __init__(self, sn, name):
-		DiskFromLsiSas3.__init__(self, sn, name)
+		super(DiskFromLsiSas2, self).__init__(sn, name)
+
+
+class DiskFromChipset(DiskFromLsiSas3):
+	def __init__(self, sn, name):
+		super(DiskFromChipset, self).__init__(sn, name)
+
+
+class DiskFromMegaRaid(Disk):
+	def __init__(self, did, name):
+		super(DiskFromMegaRaid, self).__init__()
+		self.dev_name = name
+		self.did = did
+
+	def fill_attrs(self):
+		pass

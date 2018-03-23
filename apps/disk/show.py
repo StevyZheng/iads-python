@@ -22,7 +22,7 @@ class Show(object):
 		pass
 
 	def smarterr(self):
-		show_err_disk()
+		show_err_smart_disk()
 
 	def count(self):
 		pass

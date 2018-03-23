@@ -64,21 +64,3 @@ def upload_logfile_to_server():
 		print("Upload %s success." % json_path)
 	else:
 		print("Upload failed. Cannot connect to the server!")
-
-
-def run_reboot(sec):
-	reboot(sec)
-	while True:
-		user_in = raw_input("Reboot now ?  [y/n]")
-		if "y" == user_in:
-			exe_shell("reboot")
-		elif "n" == user_in:
-			break
-
-
-def clean_reboot():
-	clean_reboot_log()
-
-
-def rm_reboot():
-	rm_reboot_t()

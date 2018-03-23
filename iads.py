@@ -1,6 +1,7 @@
 # coding=utf-8
 import fire
 from setting import str_help_list
+from linux import bin_exists
 from apps.bios import Bios
 from apps.mem import Mem
 from apps.cpu import Cpu
@@ -21,4 +22,9 @@ class Main(object):
 
 
 if __name__ == '__main__':
+	toot_list = ["lsscsi", "lsblk", "smartctl", "sas3ircu"]
+	for i in toot_list:
+		if not bin_exists(i):
+			print("%s is not exists, please install." % i)
+			exit(-1)
 	fire.Fire(Main)

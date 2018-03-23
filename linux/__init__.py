@@ -7,6 +7,7 @@ import sys
 import shutil
 import stat
 import json
+from os.path import join as pjoin
 from setting import *
 from iadslib.iadsLocalCmdExecuter import IadsLocalCmdExecuter
 
@@ -154,11 +155,20 @@ def get_main_path():
 
 
 def bin_exists(bin_name):
-	re = exe_shell(bin_name)
-	if "-bash:" in re:
-		return False
-	else:
-		return True
+	result = os.environ["PATH"].split(":")
+	import stat
+	for path_ in result:
+		bin_path = pjoin(path_, bin_name)
+		if os.path.exists(bin_path):
+			if os.access(bin_path, os.X_OK):
+				return True
+			else:
+				try:
+					os.chmod(bin_path, stat.S_IXUSR)
+				except Exception:
+					return False
+		else:
+			return False
 
 
 def check_unexists_tools():
