@@ -10,7 +10,12 @@ from linux import exe_shell, search_regex_one_line_string_column, search_regex_s
 
 
 def show_cpu_model():
-	pass
+	if not bin_exists("dmidecode"):
+		print("dmidecode is not exists, please install dmidecode.")
+		return
+	dmi_info = exe_shell("dmidecode --type processor")
+	version = search_regex_strings_column(dmi_info, ".*Version:.*", ":", 1)
+	return version[0]
 
 
 def show_cpu_info():

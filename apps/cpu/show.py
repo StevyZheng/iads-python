@@ -7,7 +7,4 @@ class Show(object):
 		show_cpu_info()
 
 	def model(self):
-		pass
-
-	def count(self):
-		pass
+		show_cpu_model()
