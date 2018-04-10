@@ -1,4 +1,5 @@
 # coding = utf-8
+import os
 import linux
 import re
 import json
@@ -7,6 +8,7 @@ from linux import try_catch
 SAS_LIMIT_COUNT = 10
 SAS_LIMIT_GB = 1024
 SATA_LIMIT_HOURS = 10
+SSD_WEAROUT_LIMIT = 99
 SATA_SMART_ERROR_LIST = [
 	"Reallocated_Sector_Ct",
 	"Spin_Retry_Count",
@@ -30,6 +32,7 @@ class Disk(object):
 		self.type = ""
 		self.smart_attr = {}
 		self.age = {}
+		self.flash = False
 
 	@staticmethod
 	def map_disk_wwn_hctl(diskname):
@@ -92,7 +95,8 @@ class Disk(object):
 			"smart": i.smart_attr,
 			"hctl": i.hctl,
 			"wwn": i.wwn,
-			"age": i.age
+			"age": i.age,
+			"is_ssd": str(i.flash)
 		}
 
 	@staticmethod
@@ -100,13 +104,13 @@ class Disk(object):
 		""" return True if smart info of disk_oj has error, else return False """
 		if "SAS" in disk_oj.smart:
 			if int(disk_oj.smart_attr["channel0Error"]["Invalid DWORD count"]) > 0 or \
-				int(disk_oj.smart_attr["channel0Error"]["Running disparity error count"]) > 0 or \
-				int(disk_oj.smart_attr["channel0Error"]["Loss of DWORD synchronization"]) > 0 or \
-				int(disk_oj.smart_attr["channel0Error"]["Phy reset problem"]) > 0 or \
-				int(disk_oj.smart_attr["channel1Error"]["Invalid DWORD count"]) > 0 or \
-				int(disk_oj.smart_attr["channel1Error"]["Running disparity error count"]) > 0 or \
-				int(disk_oj.smart_attr["channel1Error"]["Loss of DWORD synchronization"]) > 0 or \
-				int(disk_oj.smart_attr["channel1Error"]["Phy reset problem"]) > 0:
+							int(disk_oj.smart_attr["channel0Error"]["Running disparity error count"]) > 0 or \
+							int(disk_oj.smart_attr["channel0Error"]["Loss of DWORD synchronization"]) > 0 or \
+							int(disk_oj.smart_attr["channel0Error"]["Phy reset problem"]) > 0 or \
+							int(disk_oj.smart_attr["channel1Error"]["Invalid DWORD count"]) > 0 or \
+							int(disk_oj.smart_attr["channel1Error"]["Running disparity error count"]) > 0 or \
+							int(disk_oj.smart_attr["channel1Error"]["Loss of DWORD synchronization"]) > 0 or \
+							int(disk_oj.smart_attr["channel1Error"]["Phy reset problem"]) > 0:
 				return True
 			else:
 				return False
@@ -159,6 +163,20 @@ class Disk(object):
 				err_disk_dict[i.dev_name] = struct
 		return err_disk_dict
 
+	@staticmethod
+	def get_wearout_ssd_status():
+		""" return ssd wearout status dict """
+		disks = Disk.get_all_disk()
+		ssd_status = {}
+		for i in disks:
+			tmp = i.get_wearout_status()
+			# tmp[0] is dev_name, tmp[1] is wearout %
+			if tmp is not None:
+				ssd_status[tmp[0]] = tmp[1]
+		if len(ssd_status) == 0:
+			return None
+		return ssd_status
+
 
 class DiskFromLsiSas3(Disk):
 	def __init__(self, sn, name):
@@ -171,13 +189,21 @@ class DiskFromLsiSas3(Disk):
 		smartx_str = linux.exe_shell("smartctl -x /dev/%s" % self.dev_name)
 		self.smart = smartx_str
 		try:
-			self.model = linux.search_regex_one_line_string_column(smart_str, "(?:Device Model|Product):.+", ":", 1).strip()
+			self.model = linux.search_regex_one_line_string_column(smart_str, "(?:Device Model|Product):.+", ":",
+			                                                       1).strip()
 			self.fw = linux.search_regex_one_line_string_column(smart_str, "(?:Firmware|Revision).+", ":", 1).strip()
-			self.vendor = linux.search_regex_one_line_string_column(smart_str, "(?:SATA Ver|Vendor).+", ":", 1).split()[0].strip()
+			self.vendor = linux.search_regex_one_line_string_column(smart_str, "(?:SATA Ver|Vendor).+", ":", 1).split()[
+				0].strip()
 			self.sn = linux.search_regex_one_line_string_column(smart_str, "Serial (?:N|n)umber.+", ":", 1).strip()
 			map_temp = self.map_disk_wwn_hctl(self.dev_name)
 			self.wwn = map_temp["wwn"] if map_temp is not None else ""
 			self.hctl = map_temp["hctl"] if map_temp is not None else ""
+			rotational = linux.read_file(os.path.join("/sys/block", self.dev_name, "queue/rotational"))
+			if rotational.strip() == "0":
+				self.flash = True
+		except IOError:
+			print("%s read_file rotational err." % self.dev_name)
+
 		except Exception:
 			print("disk %s is not exists." % self.dev_name)
 
@@ -245,14 +271,14 @@ class DiskFromLsiSas3(Disk):
 		# }
 		#  SATA smart form:
 		#  ID# ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE      UPDATED  WHEN_FAILED RAW_VALUE
-        #   1 Raw_Read_Error_Rate     0x000f   074   063   044    Pre-fail  Always       -       26816470
-        #   3 Spin_Up_Time            0x0003   094   094   000    Pre-fail  Always       -       0
-        #   4 Start_Stop_Count        0x0032   100   100   020    Old_age   Always       -       314
-        #   5 Reallocated_Sector_Ct   0x0033   100   100   036    Pre-fail  Always       -       1
-        #   7 Seek_Error_Rate         0x000f   073   060   030    Pre-fail  Always       -       21595176
-        #   9 Power_On_Hours          0x0032   096   096   000    Old_age   Always       -       3851
-        #  10 Spin_Retry_Count        0x0013   100   100   097    Pre-fail  Always       -       0
-        #  12 Power_Cycle_Count       0x0032   100   100   020    Old_age   Always       -       271
+		#   1 Raw_Read_Error_Rate     0x000f   074   063   044    Pre-fail  Always       -       26816470
+		#   3 Spin_Up_Time            0x0003   094   094   000    Pre-fail  Always       -       0
+		#   4 Start_Stop_Count        0x0032   100   100   020    Old_age   Always       -       314
+		#   5 Reallocated_Sector_Ct   0x0033   100   100   036    Pre-fail  Always       -       1
+		#   7 Seek_Error_Rate         0x000f   073   060   030    Pre-fail  Always       -       21595176
+		#   9 Power_On_Hours          0x0032   096   096   000    Old_age   Always       -       3851
+		#  10 Spin_Retry_Count        0x0013   100   100   097    Pre-fail  Always       -       0
+		#  12 Power_Cycle_Count       0x0032   100   100   020    Old_age   Always       -       271
 		# 184 End-to-End_Error        0x0032   100   100   099    Old_age   Always       -       0
 		# 187 Reported_Uncorrect      0x0032   100   100   000    Old_age   Always       -       0
 		# 188 Command_Timeout         0x0032   100   100   000    Old_age   Always       -       0
@@ -306,8 +332,10 @@ class DiskFromLsiSas3(Disk):
 			#   'data_gb': '5999'
 			# }
 			if isinstance(self.smart, str) and ("start-stop" in self.smart):
-				self.age["start_stop_count"] = linux.search_regex_one_line_string_column(self.smart, ".+start-stop.+", ":", 1)
-				all_gb = float(self.smart_attr["read"]["byte10_9"]) + float(self.smart_attr["write"]["byte10_9"]) + float(self.smart_attr["verify"]["byte10_9"])
+				self.age["start_stop_count"] = linux.search_regex_one_line_string_column(self.smart, ".+start-stop.+",
+				                                                                         ":", 1)
+				all_gb = float(self.smart_attr["read"]["byte10_9"]) + float(
+					self.smart_attr["write"]["byte10_9"]) + float(self.smart_attr["verify"]["byte10_9"])
 				self.age["data_gb"] = str(all_gb)
 
 		if "SATA" in smart_str:
@@ -331,6 +359,13 @@ class DiskFromLsiSas3(Disk):
 			if "Start_Stop_Count" in self.smart_attr:
 				self.age["start_stop_count"] = self.smart_attr["Start_Stop_Count"]["RAW_VALUE"]
 				self.age["power_on_hours"] = self.smart_attr["Power_On_Hours"]["RAW_VALUE"]
+
+	def get_wearout_status(self):
+		if self.flash is True and "Media_Wearout_Indicator" in self.smart_attr:
+			value = self.smart_attr["Media_Wearout_Indicator"]["VALUE"]
+			return self.dev_name, value
+		else:
+			return None
 
 	def to_json(self):
 		struct = {

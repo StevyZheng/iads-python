@@ -11,3 +11,9 @@ class Show(object):
 
 	def err(self):
 		show_err_smart_disk()
+
+	def wearout(self):
+		show_wearout_ssd()
+
+	def list(self):
+		show_disk_list()

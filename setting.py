@@ -42,4 +42,3 @@ help_str = ("iads 1.0.0\n"
 
 def str_help_list():
 	return "%s%s%s" % (help_str, os.linesep, tabulate(_data, _header, tablefmt="fancy_grid", stralign="left", numalign="left"))
-
