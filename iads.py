@@ -1,4 +1,5 @@
 # coding=utf-8
+import sys
 import fire
 from setting import str_help_list
 from linux import bin_exists
@@ -8,6 +9,8 @@ from apps.cpu import Cpu
 from apps.phy import Phy
 from apps.disk import Disk
 from apps.net import Net
+reload(sys)
+sys.setdefaultencoding('utf-8')
 
 
 class Main(object):
