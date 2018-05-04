@@ -1,5 +1,5 @@
 # coding = utf-8
-from func import *
+from .func import *
 
 
 class Monitor(object):
